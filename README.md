@@ -11,7 +11,7 @@ Este é o repositório do front-end do projeto PassIn, desenvolvido como parte d
 
 ## Funcionalidades
 
-![Interface do PassIn](./assets/interface.png)
+![Interface do PassIn](./src/assets/interface.png)
 
 - Cadastro e gerenciamento de participantes.
 - Busca de participantes.
@@ -62,7 +62,7 @@ Pré-visualiza a compilação de produção localmente.
 
 ## BD - PRISMA
 
-![PRISMA do PassIn](./assets/prisma.png)
+![PRISMA do PassIn](./src/assets/prisma.png)
 
 ## Componente Principal
 
@@ -72,7 +72,7 @@ Este componente é responsável por listar os participantes de um evento, permit
 
 #### Exemplos de Uso:
 
-![Codigo do PassIn](./assets/codigo.png)
+![Codigo do PassIn](./src/assets/codigo.png)
 
 ```jsx
 import {
