@@ -1,30 +1,299 @@
-# React + TypeScript + Vite
+# Pass.In - Front-End
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Este é o repositório do front-end do projeto PassIn, desenvolvido como parte do evento NLW Unite da Rocketseat. O objetivo deste projeto é criar uma interface de usuário moderna e responsiva para gerenciar o cadastro e check-in de participantes em eventos.
 
-Currently, two official plugins are available:
+## Tecnologias Utilizadas
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **React** com **Vite** e **TypeScript**: Para a construção da interface do usuário.
+- **Tailwind CSS**: Para estilização da interface de forma eficiente e responsiva.
+- **Day.js**: Para manipulação de datas.
+- **Lucide React**: Para ícones.
 
-## Expanding the ESLint configuration
+## Funcionalidades
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+![Interface do PassIn](./assets/interface.png)
 
-- Configure the top-level `parserOptions` property like this:
+- Cadastro e gerenciamento de participantes.
+- Busca de participantes.
+- Paginação de resultados.
+- Integração com a API Node.js para consumo de dados.
+- Persistência de estados via URL.
 
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-  },
+## Scripts Disponíveis
+
+No diretório do projeto, você pode executar:
+
+### `npm run dev`
+
+Executa a aplicação em modo de desenvolvimento.\
+Abra [http://localhost:3000](http://localhost:3000) para visualizar no navegador.
+
+### `npm run build`
+
+Compila a aplicação para produção na pasta `dist`.\
+A compilação é minificada e os arquivos incluem hashes para melhor cacheamento.
+
+### `npm run preview`
+
+Pré-visualiza a compilação de produção localmente.
+
+## Dependências
+
+### Produção
+
+- `dayjs`: ^1.11.10
+- `lucide-react`: ^0.365.0
+- `react`: ^18.2.0
+- `react-dom`: ^18.2.0
+- `tailwind-merge`: ^2.2.2
+
+### Desenvolvimento
+
+- `@faker-js/faker`: ^8.4.1
+- `@tailwindcss/forms`: ^0.5.7
+- `@types/react`: ^18.2.66
+- `@types/react-dom`: ^18.2.22
+- `@vitejs/plugin-react`: ^4.2.1
+- `autoprefixer`: ^10.4.19
+- `postcss`: ^8.4.38
+- `tailwindcss`: ^3.4.3
+- `typescript`: ^5.2.2
+- `vite`: ^5.2.0
+
+## BD - PRISMA
+
+![PRISMA do PassIn](./assets/prisma.png)
+
+## Componente Principal
+
+### `AttendeeList`
+
+Este componente é responsável por listar os participantes de um evento, permitindo a busca, paginação e exibição de informações detalhadas de cada participante.
+
+#### Exemplos de Uso:
+
+![Codigo do PassIn](./assets/codigo.png)
+
+```jsx
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  MoreHorizontal,
+  Search,
+} from "lucide-react";
+import { IconButton } from "./icon-button";
+import { Table } from "./table/table";
+import { TableHeader } from "./table/table-header";
+import { TableCell } from "./table/table-cell";
+import { TableRow } from "./table/table-row";
+import { ChangeEvent, useEffect, useState } from "react";
+import dayjs from "dayjs";
+import "dayjs/locale/pt-br";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+dayjs.extend(relativeTime);
+dayjs.locale("pt-br");
+
+interface Attendee {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+  checkedInAt: string | null;
 }
-```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+export function AttendeeList() {
+  const [search, setSearch] = useState(() => {
+    const url = new URL(window.location.toString());
+
+    if (url.searchParams.has("search")) {
+      return url.searchParams.get("search") ?? "";
+    }
+
+    return "";
+  });
+  const [page, setPage] = useState(() => {
+    const url = new URL(window.location.toString());
+
+    if (url.searchParams.has("page")) {
+      return Number(url.searchParams.get("page"));
+    }
+
+    return 1;
+  });
+
+  const [total, setTotal] = useState(0);
+  const [attendees, setAttendees] = useState<Attendee[]>([]);
+
+  const totalPages = Math.ceil(total / 10);
+
+  useEffect(() => {
+    const url = new URL(
+      "http://localhost:3333/events/75010cfc-3de5-4295-bb89-4f95dcdf968c/attendees"
+    );
+
+    url.searchParams.set("pageIndex", String(page - 1));
+    if (search.length > 1) {
+      url.searchParams.set("query", search);
+    }
+
+    fetch(url)
+      .then((response) => response.json())
+      .then((data) => {
+        setAttendees(data.attendees);
+        setTotal(data.total);
+      });
+  }, [page, search]);
+
+  function setCurrentSearch(search: string) {
+    const url = new URL(window.location.toString());
+
+    url.searchParams.set("search", search);
+
+    window.history.pushState({}, "", url);
+
+    setSearch(search);
+  }
+
+  function setCurrentPage(page: number) {
+    const url = new URL(window.location.toString());
+
+    url.searchParams.set("page", String(page));
+
+    window.history.pushState({}, "", url);
+
+    setPage(page);
+  }
+
+  function onSearchInputChanged(event: ChangeEvent<HTMLInputElement>) {
+    setCurrentSearch(event.target.value);
+    setCurrentPage(1);
+  }
+
+  function goToFirstPage() {
+    setCurrentPage(1);
+  }
+
+  function goToLastPage() {
+    setCurrentPage(totalPages);
+  }
+
+  function goToPreviousPage() {
+    setCurrentPage(page - 1);
+  }
+
+  function goToNextPage() {
+    setCurrentPage(page + 1);
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex gap-3 items-center">
+        <h1 className="text-2xl font-bold">Participantes</h1>
+        <div className="px-3 w-72 py-1.5 border border-white/10 rounded-lg flex items-center gap-3">
+          <Search className="size-4 text-emerald-300" />
+          <input
+            className="bg-transparent focus:ring-0 flex-1 outline-none border-0 p-0 text-sm"
+            placeholder="Buscar participante..."
+            value={search}
+            onChange={onSearchInputChanged}
+          />
+        </div>
+      </div>
+
+      <Table>
+        <thead>
+          <tr className="border-b border-white/10">
+            <TableHeader style={{ width: 48 }}>
+              <input
+                type="checkbox"
+                className="size-4 bg-black/20 rounded border border-white/10"
+              />
+            </TableHeader>
+            <TableHeader>Código</TableHeader>
+            <TableHeader>Participante</TableHeader>
+            <TableHeader>Data de inscrição</TableHeader>
+            <TableHeader>Data do check-in</TableHeader>
+            <TableHeader style={{ width: 64 }}></TableHeader>
+          </tr>
+        </thead>
+        <tbody>
+          {attendees.map((ateendee) => {
+            return (
+              <TableRow key={ateendee.id}>
+                <TableCell>
+                  <input
+                    type="checkbox"
+                    className="size-4 bg-black/20 rounded border border-white/10"
+                  />
+                </TableCell>
+                <TableCell>{ateendee.id}</TableCell>
+                <TableCell>
+                  <div className="flex flex-col gap-1">
+                    <span className="font-semibold text-white">
+                      {ateendee.name}
+                    </span>
+                    <span>{ateendee.email}</span>
+                  </div>
+                </TableCell>
+                <TableCell>{dayjs().to(ateendee.createdAt)}</TableCell>
+                <TableCell>
+                  {ateendee.checkedInAt === null ? (
+                    <span className="text-zinc-400">Não fez check-in</span>
+                  ) : (
+                    dayjs().to(ateendee.checkedInAt)
+                  )}
+                </TableCell>
+                <TableCell>
+                  <IconButton
+                    transparent
+                    className="bg-black/20 border border-white/10 rounded-md p-1.5"
+                  >
+                    <MoreHorizontal className="size-4" />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </tbody>
+        <tfoot>
+          <tr>
+            <TableCell colSpan={3}>
+              Mostrando {attendees.length} de {total} itens
+            </TableCell>
+            <TableCell className="text-right" colSpan={3}>
+              <div className="inline-flex items-center gap-8">
+                <span>
+                  Página {page} de {totalPages}
+                </span>
+
+                <div className="flex gap-1.5">
+                  <IconButton onClick={goToFirstPage} disabled={page === 1}>
+                    <ChevronsLeft className="size-4" />
+                  </IconButton>
+                  <IconButton onClick={goToPreviousPage} disabled={page === 1}>
+                    <ChevronLeft className="size-4" />
+                  </IconButton>
+                  <IconButton
+                    onClick={goToNextPage}
+                    disabled={page === totalPages}
+                  >
+                    <ChevronRight className="size-4" />
+                  </IconButton>
+                  <IconButton
+                    onClick={goToLastPage}
+                    disabled={page === totalPages}
+                  >
+                    <ChevronsRight className="size-4" />
+                  </IconButton>
+                </div>
+              </div>
+            </TableCell>
+          </tr>
+        </tfoot>
+      </Table>
+    </div>
+  );
+}
